@@ -1,0 +1,1673 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>Hành Trình Giải Mã Sóng Hồng Ngoại (IR Spectrum Quest) - Hóa Học 11</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts hỗ trợ tiếng Việt đầy đủ -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Be Vietnam Pro"', 'sans-serif'],
+                        display: ['"Space Grotesk"', '"Be Vietnam Pro"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Đảm bảo hiển thị mượt trên mọi điện thoại, không bao giờ tràn ngang */
+        html, body {
+            overflow-x: hidden;
+            max-width: 100vw;
+            font-family: 'Be Vietnam Pro', sans-serif;
+            background-color: #f3f6fc;
+            color: #1e293b;
+            -webkit-tap-highlight-color: transparent;
+            word-wrap: break-word;
+        }
+
+        /* Định dạng chuẩn xác cho công thức hóa học & đơn vị cm⁻¹ */
+        .chem {
+            font-variant-numeric: lining-nums;
+            letter-spacing: 0.01em;
+            display: inline-block;
+            line-height: 1.35;
+        }
+        .chem sub, sub {
+            font-size: 0.72em;
+            line-height: 0;
+            position: relative;
+            vertical-align: baseline;
+            bottom: -0.24em;
+            font-weight: 700;
+        }
+        .chem sup, sup {
+            font-size: 0.72em;
+            line-height: 0;
+            position: relative;
+            vertical-align: baseline;
+            top: -0.45em;
+            font-weight: 700;
+        }
+
+        /* Nền lưới phòng Lab công nghệ cao */
+        .lab-grid-bg {
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(6, 182, 212, 0.09) 0%, transparent 40%),
+                radial-gradient(circle at 85% 80%, rgba(139, 92, 246, 0.09) 0%, transparent 40%),
+                linear-gradient(to right, rgba(99, 102, 241, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(99, 102, 241, 0.05) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 28px 28px, 28px 28px;
+        }
+
+        /* Nút 3D mềm mại, chiều cao tối thiểu 44px cho cảm ứng */
+        .btn-3d {
+            min-height: 44px;
+            transition: transform 0.14s ease, box-shadow 0.14s ease, background-color 0.15s ease;
+            box-shadow: 0 4px 0 rgba(15, 23, 42, 0.18);
+        }
+        .btn-3d:active:not(:disabled) {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 rgba(15, 23, 42, 0.18);
+        }
+
+        /* Tia laser hồng ngoại quét ngang màn hình phổ */
+        @keyframes irSweep {
+            0% { transform: translateX(0%); opacity: 0.9; }
+            50% { transform: translateX(92%); opacity: 1; }
+            100% { transform: translateX(0%); opacity: 0.9; }
+        }
+        .ir-laser-beam {
+            animation: irSweep 3.2s ease-in-out infinite;
+        }
+
+        /* Hiệu ứng xuất hiện */
+        @keyframes popSlide {
+            0% { opacity: 0; transform: translateY(10px) scale(0.97); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .animate-pop {
+            animation: popSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Hiệu ứng lắc nhẹ khi chọn sai */
+        @keyframes wiggle {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .animate-wiggle {
+            animation: wiggle 0.35s ease-in-out;
+        }
+    </style>
+</head>
+<body class="lab-grid-bg min-h-screen flex flex-col justify-between selection:bg-cyan-200 selection:text-slate-900">
+
+    <!-- ==================== HEADER CỐ ĐỊNH TRONG QUÁ TRÌNH CHƠI ==================== -->
+    <header id="game-header" class="hidden sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-indigo-100 shadow-sm">
+        <div class="max-w-3xl mx-auto px-3 py-2.5 sm:px-5">
+            <div class="flex items-center justify-between gap-2 mb-2">
+                <!-- Thông tin học sinh & Trạm -->
+                <div class="flex items-center gap-2 min-w-0">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-indigo-600 text-white flex items-center justify-center font-display font-bold text-xs shrink-0 shadow-sm">
+                        IR
+                    </div>
+                    <div class="min-w-0">
+                        <p id="header-player-name" class="text-xs sm:text-sm font-bold text-slate-800 truncate">Chuyên Viên Lab</p>
+                        <p id="header-stage-label" class="text-[11px] font-bold text-indigo-600 truncate">Trạm 1/4: Máy Quét Phổ IR</p>
+                    </div>
+                </div>
+
+                <!-- Điểm XP, Combo, Tra cứu nhanh & Âm thanh -->
+                <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                    <div id="combo-badge" class="hidden items-center gap-1 px-2 py-1 rounded-full bg-orange-100 text-orange-700 border border-orange-200 text-xs font-extrabold">
+                        <span>🔥</span><span id="combo-count">x2</span>
+                    </div>
+
+                    <div class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-cyan-50 border border-cyan-200 text-cyan-800 text-xs sm:text-sm font-extrabold">
+                        <span>⚡</span><span id="score-display">0</span><span class="text-[10px] font-bold">XP</span>
+                    </div>
+
+                    <!-- Nút mở Bảng Tra Cứu Phổ IR Chuẩn -->
+                    <button onclick="openRefModal()" title="Tra cứu Bảng Tín Hiệu IR" class="px-2.5 py-1.5 rounded-xl bg-violet-100 hover:bg-violet-200 text-violet-800 border border-violet-200 text-xs font-extrabold flex items-center gap-1 transition cursor-pointer">
+                        <span>📖</span><span class="hidden sm:inline">Bảng IR</span>
+                    </button>
+
+                    <!-- Nút Âm thanh -->
+                    <button onclick="toggleSound()" id="sound-btn" title="Bật/Tắt âm thanh" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-sm transition cursor-pointer">
+                        🔊
+                    </button>
+                </div>
+            </div>
+
+            <!-- Thanh tiến trình 4 Trạm -->
+            <div class="grid grid-cols-4 gap-1.5">
+                <div id="prog-1" class="h-1.5 rounded-full bg-cyan-500 transition-all duration-300"></div>
+                <div id="prog-2" class="h-1.5 rounded-full bg-slate-200 transition-all duration-300"></div>
+                <div id="prog-3" class="h-1.5 rounded-full bg-slate-200 transition-all duration-300"></div>
+                <div id="prog-4" class="h-1.5 rounded-full bg-slate-200 transition-all duration-300"></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ==================== KHU VỰC NỘI DUNG CHÍNH ==================== -->
+    <main class="flex-grow w-full max-w-3xl mx-auto px-3 py-4 sm:px-5 sm:py-6 flex flex-col justify-center">
+
+        <!-- ================= MÀN HÌNH 0: CHÀO MỪNG & ĐĂNG KÝ ================= -->
+        <section id="screen-welcome" class="animate-pop">
+            <div class="bg-white rounded-3xl shadow-xl border border-indigo-100 overflow-hidden">
+                <!-- Banner Lab Công nghệ cao -->
+                <div class="bg-gradient-to-br from-slate-900 via-indigo-950 to-cyan-950 p-5 sm:p-8 text-white relative overflow-hidden">
+                    <!-- Minh họa sóng phổ IR SVG phía nền -->
+                    <svg class="absolute right-0 bottom-0 w-64 h-36 opacity-25 pointer-events-none" viewBox="0 0 260 120" fill="none">
+                        <path d="M0 20 H45 Q55 20 62 75 Q70 110 78 75 Q85 20 95 20 H140 L148 105 L156 20 H260" stroke="#22d3ee" stroke-width="3" fill="none"/>
+                        <circle cx="148" cy="105" r="5" fill="#fb7185"/>
+                        <circle cx="70" cy="95" r="5" fill="#a78bfa"/>
+                    </svg>
+
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-400/15 border border-cyan-300/30 text-cyan-300 text-xs font-bold uppercase tracking-wider mb-3">
+                        <span>📡 Hóa Học 11 • Chương trình GDPT 2018</span>
+                    </div>
+                    <h1 class="font-display text-2xl sm:text-4xl font-extrabold leading-tight mb-2">
+                        Hành Trình Giải Mã<br>
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-violet-300 to-rose-300">Sóng Hồng Ngoại (IR)</span>
+                    </h1>
+                    <p class="text-slate-200 text-sm sm:text-base leading-relaxed max-w-xl">
+                        Chào mừng đến với <strong>Phòng Thí Nghiệm Quang Phổ Hiện Đại</strong>! Hãy sử dụng bức xạ hồng ngoại (<span class="chem">4000 – 400 cm<sup>-1</sup></span>) để "soi thấu" cấu trúc và truy tìm các nhóm chức ẩn giấu bên trong phân tử hữu cơ.
+                    </p>
+                </div>
+
+                <!-- Lộ trình 4 Trạm & Form đăng ký -->
+                <div class="p-5 sm:p-7 space-y-5">
+                    <div class="bg-indigo-50/70 rounded-2xl p-4 border border-indigo-100">
+                        <h2 class="text-xs font-extrabold uppercase tracking-wider text-indigo-900 mb-3 flex items-center gap-1.5">
+                            <span>🧭</span> Bản Đồ 4 Trạm Giải Mã Phổ IR
+                        </h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs sm:text-sm">
+                            <div class="flex items-center gap-3 bg-white p-3 rounded-xl border border-indigo-100 shadow-2xs">
+                                <span class="w-8 h-8 rounded-xl bg-cyan-100 text-cyan-700 font-extrabold flex items-center justify-center shrink-0">1</span>
+                                <div>
+                                    <p class="font-bold text-slate-800">Máy Quét Phổ IR</p>
+                                    <p class="text-xs text-slate-500">Chiếu laser soi nhóm chức 8 mẫu vật</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 bg-white p-3 rounded-xl border border-indigo-100 shadow-2xs">
+                                <span class="w-8 h-8 rounded-xl bg-violet-100 text-violet-700 font-extrabold flex items-center justify-center shrink-0">2</span>
+                                <div>
+                                    <p class="font-bold text-slate-800">Bản Đồ Tần Số</p>
+                                    <p class="text-xs text-slate-500">Ghép 6 liên kết vào vùng số sóng</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 bg-white p-3 rounded-xl border border-indigo-100 shadow-2xs">
+                                <span class="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 font-extrabold flex items-center justify-center shrink-0">3</span>
+                                <div>
+                                    <p class="font-bold text-slate-800">Truy Tìm Nhãn Lọ</p>
+                                    <p class="text-xs text-slate-500">Đọc đồ thị IR dán nhãn 4 hóa chất</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 bg-white p-3 rounded-xl border border-indigo-100 shadow-2xs">
+                                <span class="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 font-extrabold flex items-center justify-center shrink-0">4</span>
+                                <div>
+                                    <p class="font-bold text-slate-800">Hồ Sơ Hợp Chất X</p>
+                                    <p class="text-xs text-slate-500">Thử thách suy luận chuyên gia</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Nhập Họ tên & Lớp -->
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="sm:col-span-2">
+                                <label for="input-name" class="block text-xs font-bold text-slate-700 mb-1">
+                                    Họ và tên học sinh <span class="text-rose-500">*</span>
+                                </label>
+                                <input type="text" id="input-name" placeholder="Ví dụ: Trần Gia Huy" maxlength="40"
+                                    class="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 outline-none text-sm font-semibold text-slate-800 transition">
+                            </div>
+                            <div>
+                                <label for="input-class" class="block text-xs font-bold text-slate-700 mb-1">
+                                    Lớp (Tùy chọn)
+                                </label>
+                                <input type="text" id="input-class" placeholder="VD: 11A2" maxlength="15"
+                                    class="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 outline-none text-sm font-semibold text-slate-800 transition">
+                            </div>
+                        </div>
+                        <p id="name-error" class="hidden text-xs font-bold text-rose-600">
+                            ⚠️ Bạn hãy nhập họ và tên để kích hoạt thẻ Chuyên viên Quang phổ nhé!
+                        </p>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-2.5">
+                        <button onclick="openRefModal()" class="btn-3d py-3 px-4 rounded-2xl bg-violet-100 hover:bg-violet-200 text-violet-900 font-bold text-sm flex items-center justify-center gap-2 cursor-pointer">
+                            <span>📖 Xem trước Bảng Tín Hiệu IR</span>
+                        </button>
+                        <button onclick="startGame()" class="btn-3d flex-1 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-violet-600 hover:from-cyan-400 hover:to-violet-500 text-white font-display font-extrabold text-base tracking-wide flex items-center justify-center gap-2 cursor-pointer">
+                            <span>🚀 BẮT ĐẦU GIẢI MÃ</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= MÀN HÌNH CHƠI CHÍNH (4 TRẠM) ================= -->
+        <section id="screen-play" class="hidden space-y-4">
+            <div id="stage-container" class="bg-white rounded-3xl shadow-lg border border-indigo-100 p-4 sm:p-6 animate-pop">
+                <!-- Nội dung từng trạm render động -->
+            </div>
+        </section>
+
+        <!-- ================= MÀN HÌNH TỔNG KẾT & CHỨNG NHẬN ================= -->
+        <section id="screen-result" class="hidden animate-pop space-y-4">
+            <div class="bg-white rounded-3xl shadow-xl border-2 border-cyan-400 overflow-hidden">
+                <!-- Banner Chứng nhận -->
+                <div class="bg-gradient-to-br from-slate-900 via-indigo-950 to-cyan-900 p-5 sm:p-7 text-center text-white relative">
+                    <div class="inline-block px-3 py-1 rounded-full bg-cyan-400/20 border border-cyan-300/40 text-cyan-200 text-xs font-bold uppercase tracking-wider mb-2">
+                        🏆 Hoàn Thành Hành Trình Phổ Hồng Ngoại (IR)
+                    </div>
+                    <div id="result-badge-icon" class="w-16 h-16 sm:w-20 sm:h-20 mx-auto my-2 rounded-2xl bg-gradient-to-br from-cyan-400 to-violet-500 flex items-center justify-center text-3xl sm:text-4xl shadow-lg border-2 border-white">
+                        📡
+                    </div>
+                    <h2 id="result-rank-title" class="font-display text-xl sm:text-3xl font-extrabold text-cyan-300 mt-1">
+                        Bậc Thầy Quang Phổ IR
+                    </h2>
+                    <p id="result-student-info" class="text-sm sm:text-base font-semibold text-slate-200 mt-1">
+                        Học sinh: Trần Gia Huy • Lớp: 11A2
+                    </p>
+                </div>
+
+                <!-- Bảng thống kê điểm số & từng trạm -->
+                <div class="p-4 sm:p-6 space-y-4">
+                    <div class="grid grid-cols-3 gap-2 sm:gap-3 text-center">
+                        <div class="bg-cyan-50 border border-cyan-200 rounded-2xl p-3">
+                            <p class="text-[11px] font-bold text-cyan-800 uppercase">Tổng điểm</p>
+                            <p id="final-score" class="text-xl sm:text-2xl font-extrabold text-cyan-700 mt-0.5">0 XP</p>
+                        </div>
+                        <div class="bg-violet-50 border border-violet-200 rounded-2xl p-3">
+                            <p class="text-[11px] font-bold text-violet-800 uppercase">Chính xác</p>
+                            <p id="final-accuracy" class="text-xl sm:text-2xl font-extrabold text-violet-700 mt-0.5">0/22</p>
+                        </div>
+                        <div class="bg-rose-50 border border-rose-200 rounded-2xl p-3">
+                            <p class="text-[11px] font-bold text-rose-800 uppercase">Thời gian</p>
+                            <p id="final-time" class="text-xl sm:text-2xl font-extrabold text-rose-600 mt-0.5">00:00</p>
+                        </div>
+                    </div>
+
+                    <!-- Chi tiết điểm từng Trạm -->
+                    <div class="bg-slate-50 rounded-2xl p-3.5 border border-slate-200">
+                        <p class="text-xs font-extrabold uppercase tracking-wider text-slate-600 mb-2">📊 Thành tích chi tiết 4 Trạm:</p>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                            <div class="bg-white p-2.5 rounded-xl border border-slate-200">
+                                <p class="text-slate-500 font-semibold">Trạm 1 (Quét IR)</p>
+                                <p id="stat-s1" class="font-extrabold text-cyan-700 text-sm mt-0.5">0/8</p>
+                            </div>
+                            <div class="bg-white p-2.5 rounded-xl border border-slate-200">
+                                <p class="text-slate-500 font-semibold">Trạm 2 (Tần số)</p>
+                                <p id="stat-s2" class="font-extrabold text-violet-700 text-sm mt-0.5">0/6</p>
+                            </div>
+                            <div class="bg-white p-2.5 rounded-xl border border-slate-200">
+                                <p class="text-slate-500 font-semibold">Trạm 3 (Dán nhãn)</p>
+                                <p id="stat-s3" class="font-extrabold text-rose-600 text-sm mt-0.5">0/4</p>
+                            </div>
+                            <div class="bg-white p-2.5 rounded-xl border border-slate-200">
+                                <p class="text-slate-500 font-semibold">Trạm 4 (Hồ sơ X)</p>
+                                <p id="stat-s4" class="font-extrabold text-amber-600 text-sm mt-0.5">0/4</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Nhận xét năng lực & Cẩm nang ghi nhớ -->
+                    <div class="bg-indigo-50/70 rounded-2xl p-4 border border-indigo-100 space-y-2.5">
+                        <h3 class="text-xs font-extrabold uppercase tracking-wider text-indigo-900 flex items-center gap-1.5">
+                            <span>🎓</span> Đánh Giá Năng Lực Quang Phổ
+                        </h3>
+                        <p id="result-feedback-text" class="text-xs sm:text-sm text-slate-700 leading-relaxed"></p>
+                        
+                        <div class="pt-2 border-t border-indigo-200/70 text-xs text-slate-700 space-y-1">
+                            <p class="font-bold text-indigo-900">🔑 Tóm tắt nhanh đọc phổ IR (SGK Hóa 11):</p>
+                            <ul class="list-disc pl-4 space-y-1">
+                                <li><strong>O–H (alcohol):</strong> Peak tù, rộng ở <span class="chem">3600 – 3200 cm<sup>-1</sup></span>.</li>
+                                <li><strong>O–H (carboxylic acid):</strong> Peak rất rộng trải dài <span class="chem">3300 – 2500 cm<sup>-1</sup></span> + peak <strong>C=O</strong> nhọn ở <span class="chem">1725 – 1700 cm<sup>-1</sup></span>.</li>
+                                <li><strong>C=O (aldehyde, ketone, ester, acid):</strong> Peak mạnh, nhọn ở <span class="chem">1750 – 1700 cm<sup>-1</sup></span>.</li>
+                                <li><strong>N–H (amine):</strong> Peak ở <span class="chem">3500 – 3300 cm<sup>-1</sup></span> (bậc 1 có 2 mũi nhọn, bậc 2 có 1 mũi).</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="bg-cyan-50 border border-cyan-200 rounded-xl p-3 text-center text-xs text-cyan-900 font-semibold">
+                        📸 <strong>Nộp bài:</strong> Em hãy chụp ảnh màn hình thẻ chứng nhận này hoặc bấm <em>"Sao chép kết quả"</em> để gửi cho thầy/cô nhé!
+                    </div>
+
+                    <!-- Các nút thao tác -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                        <button onclick="copyResultSummary()" id="btn-copy" class="btn-3d py-3 px-4 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer">
+                            <span>📋 Sao chép kết quả</span>
+                        </button>
+                        <button onclick="toggleReviewAnswers()" id="btn-review" class="btn-3d py-3 px-4 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer">
+                            <span>🔍 Xem lại đáp án</span>
+                        </button>
+                        <button onclick="resetGame()" class="btn-3d py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer">
+                            <span>🔄 Chơi lại</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Khu vực xem lại toàn bộ đáp án (ẩn mặc định) -->
+            <div id="review-section" class="hidden bg-white rounded-3xl shadow-lg border border-slate-200 p-4 sm:p-6 space-y-4 animate-pop">
+                <h3 class="font-display font-extrabold text-base sm:text-lg text-slate-800 flex items-center gap-2">
+                    <span>📚</span> Sổ Tay Đáp Án & Giải Thích Chi Tiết
+                </h3>
+                <div id="review-list" class="space-y-3 text-xs sm:text-sm"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="text-center py-3 px-4 text-[11px] text-slate-500">
+        IR Spectrum Quest • Phiếu học tập tương tác Hóa học 11 (GDPT 2018)
+    </footer>
+
+    <!-- ==================== MODAL 1: HỘP THOẠI PHẢN HỒI SAU MỖI CÂU ==================== -->
+    <div id="feedback-modal" class="hidden fixed inset-0 z-50 bg-slate-900/65 backdrop-blur-xs flex items-end sm:items-center justify-center p-3 sm:p-4">
+        <div id="feedback-box" class="bg-white w-full max-w-lg rounded-3xl p-5 sm:p-6 shadow-2xl border-2 animate-pop space-y-4">
+            <div class="flex items-start gap-3">
+                <div id="fb-icon" class="w-11 h-11 rounded-2xl flex items-center justify-center text-2xl shrink-0">
+                    ✅
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h3 id="fb-title" class="font-display font-extrabold text-lg sm:text-xl">Chính xác!</h3>
+                    <p id="fb-points" class="text-xs font-bold text-cyan-600">+100 XP</p>
+                </div>
+            </div>
+            <div id="fb-explanation" class="bg-slate-50 rounded-2xl p-3.5 text-xs sm:text-sm text-slate-700 leading-relaxed border border-slate-200">
+            </div>
+            <button id="fb-next-btn" onclick="closeFeedbackAndNext()" class="btn-3d w-full py-3 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm sm:text-base cursor-pointer">
+                Tiếp tục ➔
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL 2: BẢNG TRA CỨU TÍN HIỆU IR CHUẨN SGK ==================== -->
+    <div id="ref-modal" class="hidden fixed inset-0 z-50 bg-slate-900/65 backdrop-blur-xs flex items-end sm:items-center justify-center p-2.5 sm:p-4">
+        <div class="bg-white w-full max-w-2xl max-h-[88vh] flex flex-col rounded-3xl shadow-2xl border border-violet-200 overflow-hidden animate-pop">
+            <div class="bg-gradient-to-r from-violet-700 to-indigo-700 px-4 py-3.5 sm:px-6 text-white flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">📖</span>
+                    <div>
+                        <h3 class="font-display font-extrabold text-sm sm:text-base">Bảng Tín Hiệu Phổ Hồng Ngoại (IR) Chuẩn</h3>
+                        <p class="text-[11px] text-violet-200">Vùng đặc trưng: <span class="chem">4000 – 1500 cm<sup>-1</sup></span></p>
+                    </div>
+                </div>
+                <button onclick="closeRefModal()" class="w-9 h-9 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold flex items-center justify-center cursor-pointer">
+                    ✕
+                </button>
+            </div>
+
+            <div class="p-4 sm:p-5 overflow-y-auto space-y-3 text-xs sm:text-sm">
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-xs text-amber-900">
+                    💡 <strong>Mẹo đọc đồ thị IR:</strong> Trục ngang ghi số sóng giảm dần từ trái sang phải (<span class="chem">4000 → 400 cm<sup>-1</sup></span>). Các mũi hấp thụ (peak) hướng <strong>chúc xuống dưới</strong>!
+                </div>
+
+                <div class="overflow-x-auto rounded-2xl border border-slate-200">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-700 text-xs uppercase">
+                                <th class="p-2.5 border-b border-slate-200">Loại hợp chất</th>
+                                <th class="p-2.5 border-b border-slate-200">Liên kết</th>
+                                <th class="p-2.5 border-b border-slate-200">Số sóng (<span class="chem">cm<sup>-1</sup></span>)</th>
+                                <th class="p-2.5 border-b border-slate-200">Hình dạng peak</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200 text-xs sm:text-sm">
+                            <tr class="bg-cyan-50/40">
+                                <td class="p-2.5 font-bold text-cyan-800">Alcohol / Phenol</td>
+                                <td class="p-2.5 font-bold">O–H</td>
+                                <td class="p-2.5 font-extrabold text-slate-900"><span class="chem">3600 – 3200</span></td>
+                                <td class="p-2.5 text-slate-600">Tù, rộng, bầu tròn</td>
+                            </tr>
+                            <tr class="bg-rose-50/40">
+                                <td class="p-2.5 font-bold text-rose-800">Carboxylic acid</td>
+                                <td class="p-2.5 font-bold">O–H<br>C=O</td>
+                                <td class="p-2.5 font-extrabold text-slate-900"><span class="chem">3300 – 2500</span><br><span class="chem">1725 – 1700</span></td>
+                                <td class="p-2.5 text-slate-600">O–H rất rộng (trùm C–H) + C=O nhọn, mạnh</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2.5 font-bold text-indigo-800">Aldehyde, Ketone, Ester</td>
+                                <td class="p-2.5 font-bold">C=O</td>
+                                <td class="p-2.5 font-extrabold text-slate-900"><span class="chem">1750 – 1700</span></td>
+                                <td class="p-2.5 text-slate-600">Mạnh, nhọn sắc nét (không có peak O–H)</td>
+                            </tr>
+                            <tr class="bg-violet-50/40">
+                                <td class="p-2.5 font-bold text-violet-800">Amine</td>
+                                <td class="p-2.5 font-bold">N–H</td>
+                                <td class="p-2.5 font-extrabold text-slate-900"><span class="chem">3500 – 3300</span></td>
+                                <td class="p-2.5 text-slate-600">Trung bình (bậc 1: 2 mũi; bậc 2: 1 mũi)</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2.5 font-bold text-slate-700">Alkane (mạch no)</td>
+                                <td class="p-2.5 font-bold">C–H</td>
+                                <td class="p-2.5 font-extrabold text-slate-900"><span class="chem">3000 – 2850</span></td>
+                                <td class="p-2.5 text-slate-600">Nhọn, nằm ngay bên phải mốc 3000</td>
+                            </tr>
+                            <tr class="bg-emerald-50/40">
+                                <td class="p-2.5 font-bold text-emerald-800">Alkene / Vòng thơm</td>
+                                <td class="p-2.5 font-bold">C=C</td>
+                                <td class="p-2.5 font-extrabold text-slate-900"><span class="chem">1680 – 1600</span></td>
+                                <td class="p-2.5 text-slate-600">Trung bình đến yếu (thơm: <span class="chem">1600–1450</span>)</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2.5 font-bold text-amber-800">Alkyne / Nitrile</td>
+                                <td class="p-2.5 font-bold">C≡C / C≡N</td>
+                                <td class="p-2.5 font-extrabold text-slate-900"><span class="chem">2260 – 2100</span></td>
+                                <td class="p-2.5 text-slate-600">Nhọn, nằm ở vùng trống giữa phổ</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="p-3 bg-slate-50 border-t border-slate-200 shrink-0">
+                <button onclick="closeRefModal()" class="btn-3d w-full py-2.5 rounded-xl bg-slate-800 text-white font-bold text-sm cursor-pointer">
+                    Đã hiểu, quay lại làm bài
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MÃ JAVASCRIPT ĐIỀU KHIỂN TOÀN BỘ ỨNG DỤNG ==================== -->
+    <script>
+        // -------------------- 1. ÂM THANH WEB AUDIO API --------------------
+        let soundEnabled = true;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) audioCtx = new AudioContext();
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('sound-btn').textContent = soundEnabled ? '🔊' : '🔇';
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                initAudio();
+                if (!audioCtx) return;
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'scan') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(660, now);
+                    osc.frequency.exponentialRampToValueAtTime(1320, now + 0.16);
+                    gain.gain.setValueAtTime(0.14, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                } else if (type === 'correct') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.setValueAtTime(659.25, now + 0.08);
+                    osc.frequency.setValueAtTime(783.99, now + 0.16);
+                    gain.gain.setValueAtTime(0.18, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+                    osc.start(now);
+                    osc.stop(now + 0.38);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(210, now);
+                    osc.frequency.linearRampToValueAtTime(150, now + 0.22);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+                    osc.start(now);
+                    osc.stop(now + 0.28);
+                } else if (type === 'win') {
+                    [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.connect(g);
+                        g.connect(audioCtx.destination);
+                        o.type = 'triangle';
+                        o.frequency.setValueAtTime(f, now + i * 0.11);
+                        g.gain.setValueAtTime(0.16, now + i * 0.11);
+                        g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.11 + 0.42);
+                        o.start(now + i * 0.11);
+                        o.stop(now + i * 0.11 + 0.42);
+                    });
+                }
+            } catch (e) {}
+        }
+
+        function openRefModal() {
+            document.getElementById('ref-modal').classList.remove('hidden');
+        }
+        function closeRefModal() {
+            document.getElementById('ref-modal').classList.add('hidden');
+        }
+
+        // -------------------- 2. TRÌNH VẼ ĐỒ THỊ PHỔ IR BẰNG SVG CHUẨN XÁC --------------------
+        /**
+         * Hàm sinh đồ thị Phổ Hồng Ngoại (IR) chuẩn xác bằng SVG
+         * Trục X: 4000 cm⁻¹ (x=42) -> 400 cm⁻¹ (x=348)
+         * Trục Y: %T từ 100% (y=24) -> 0% (y=146)
+         * @param {string} profileType - Loại đường phổ đặc trưng
+         * @param {Array} annotations - Danh sách nhãn peak [{x, y, label, color}]
+         */
+        function renderIRSpectrumSVG(profileType, annotations = []) {
+            let curvePath = "";
+            let highlightZones = "";
+
+            if (profileType === 'alcohol') {
+                // O-H tù rộng tại ~3350 (x=96) + C-H nhọn tại ~2950 (x=131), không có C=O ở 1700
+                highlightZones = `<rect x="74" y="24" width="44" height="122" fill="#06b6d4" fill-opacity="0.14" rx="4"/>`;
+                curvePath = `M 42 32 L 72 32 C 82 32, 86 112, 96 112 C 106 112, 110 34, 120 34 L 126 34 L 130 92 L 134 45 L 138 86 L 143 32 L 235 32 L 240 55 L 245 34 L 265 34 L 272 78 L 278 40 L 288 104 L 296 36 L 315 62 L 325 35 L 348 34`;
+            } else if (profileType === 'acid') {
+                // O-H rất rộng 3300-2500 (x=98..168) trùm lên C-H + C=O nhọn mạnh tại ~1710 (x=236)
+                highlightZones = `
+                    <rect x="94" y="24" width="76" height="122" fill="#f43f5e" fill-opacity="0.13" rx="4"/>
+                    <rect x="225" y="24" width="22" height="122" fill="#8b5cf6" fill-opacity="0.16" rx="4"/>
+                `;
+                curvePath = `M 42 32 L 88 32 C 98 34, 106 105, 124 108 L 130 124 L 135 106 L 140 120 L 146 102 C 156 96, 164 42, 174 34 L 228 34 L 236 136 L 244 34 L 265 34 L 273 84 L 282 42 L 295 96 L 305 38 L 325 68 L 335 35 L 348 34`;
+            } else if (profileType === 'ketone_ester') {
+                // Chỉ có C-H ở ~2950 (x=131) + C=O nhọn mạnh ở ~1715-1740 (x=235), KHÔNG có peak O-H trên 3200
+                highlightZones = `<rect x="223" y="24" width="24" height="122" fill="#8b5cf6" fill-opacity="0.16" rx="4"/>`;
+                curvePath = `M 42 32 L 122 32 L 128 84 L 132 46 L 136 78 L 142 32 L 227 32 L 235 138 L 243 32 L 266 32 L 274 76 L 283 38 L 296 98 L 306 36 L 326 60 L 336 34 L 348 34`;
+            } else if (profileType === 'aldehyde') {
+                // C-H no (2950) + cặp C-H aldehyde (2820 & 2720: x=142, 151) + C=O nhọn mạnh (1725: x=235)
+                highlightZones = `
+                    <rect x="137" y="24" width="20" height="122" fill="#f59e0b" fill-opacity="0.15" rx="4"/>
+                    <rect x="223" y="24" width="24" height="122" fill="#8b5cf6" fill-opacity="0.16" rx="4"/>
+                `;
+                curvePath = `M 42 32 L 122 32 L 128 82 L 133 42 L 142 88 L 146 46 L 151 86 L 157 32 L 227 32 L 235 137 L 243 32 L 268 32 L 276 74 L 286 40 L 298 92 L 308 36 L 328 58 L 348 34`;
+            } else if (profileType === 'alkane') {
+                // Chỉ có C-H alkane ở 2960-2850 (x=130..138), vùng 3600-3200 và 1750-1700 phẳng lì
+                highlightZones = `<rect x="122" y="24" width="24" height="122" fill="#10b981" fill-opacity="0.16" rx="4"/>`;
+                curvePath = `M 42 32 L 123 32 L 129 118 L 133 55 L 138 112 L 144 32 L 260 32 L 268 78 L 276 42 L 286 72 L 296 36 L 324 56 L 334 34 L 348 34`;
+            } else if (profileType === 'amine') {
+                // N-H amine bậc 1: 2 mũi nhọn trung bình ở ~3400 & ~3320 (x=92, 99) + C-H
+                highlightZones = `<rect x="82" y="24" width="26" height="122" fill="#ec4899" fill-opacity="0.15" rx="4"/>`;
+                curvePath = `M 42 32 L 85 32 L 91 86 L 95 52 L 99 84 L 105 32 L 124 32 L 130 92 L 135 48 L 139 84 L 145 32 L 246 32 L 252 76 L 258 36 L 280 36 L 290 95 L 302 38 L 324 68 L 348 34`;
+            } else if (profileType === 'alkene') {
+                // =C-H (>3000, x=122) + C=C nhọn trung bình ở ~1645 (x=242)
+                highlightZones = `<rect x="232" y="24" width="20" height="122" fill="#0ea5e9" fill-opacity="0.16" rx="4"/>`;
+                curvePath = `M 42 32 L 118 32 L 122 76 L 126 42 L 131 88 L 137 32 L 236 32 L 242 96 L 248 32 L 268 32 L 276 72 L 298 106 L 310 36 L 348 34`;
+            } else if (profileType === 'alkyne') {
+                // ≡C-H (~3300 nhọn, x=101) + C≡C nhọn ở vùng trống ~2140 (x=200)
+                highlightZones = `<rect x="190" y="24" width="20" height="122" fill="#f97316" fill-opacity="0.16" rx="4"/>`;
+                curvePath = `M 42 32 L 96 32 L 101 102 L 106 32 L 125 32 L 131 82 L 137 32 L 195 32 L 200 94 L 205 32 L 270 32 L 282 78 L 312 108 L 322 36 L 348 34`;
+            }
+
+            const labelsHTML = annotations.map(a => `
+                <g>
+                    <circle cx="${a.x}" cy="${a.y}" r="3.5" fill="${a.color || '#e11d48'}"/>
+                    <rect x="${a.x - 36}" y="${Math.min(a.y + 5, 131)}" width="72" height="14" rx="4" fill="#0f172a" fill-opacity="0.88"/>
+                    <text x="${a.x}" y="${Math.min(a.y + 15, 141)}" text-anchor="middle" fill="#ffffff" font-size="8.5" font-weight="700" font-family="Be Vietnam Pro, sans-serif">${a.label}</text>
+                </g>
+            `).join('');
+
+            return `
+                <div class="w-full bg-white rounded-2xl border border-slate-200 p-2 shadow-inner">
+                    <svg viewBox="0 0 365 174" class="w-full h-auto block select-none" role="img" aria-label="Biểu đồ phổ hồng ngoại IR">
+                        <!-- Khung nền đồ thị -->
+                        <rect x="42" y="24" width="306" height="122" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2"/>
+                        
+                        <!-- Vùng dấu vân tay (1500 - 400 cm⁻¹: x=254 đến 348) -->
+                        <rect x="254" y="24" width="94" height="122" fill="#e2e8f0" fill-opacity="0.45"/>
+                        <text x="301" y="18" text-anchor="middle" fill="#64748b" font-size="8" font-weight="700">Vùng dấu vân tay</text>
+                        <text x="148" y="18" text-anchor="middle" fill="#0284c7" font-size="8" font-weight="700">Vùng nhóm chức đặc trưng</text>
+
+                        <!-- Vùng tô sáng peak -->
+                        ${highlightZones}
+
+                        <!-- Lưới ngang %T -->
+                        <line x1="42" y1="54" x2="348" y2="54" stroke="#e2e8f0" stroke-dasharray="3 3"/>
+                        <line x1="42" y1="85" x2="348" y2="85" stroke="#e2e8f0" stroke-dasharray="3 3"/>
+                        <line x1="42" y1="115" x2="348" y2="115" stroke="#e2e8f0" stroke-dasharray="3 3"/>
+
+                        <!-- Lưới dọc mốc số sóng chuẩn: 3500(84), 3000(127), 2500(169), 2000(212), 1500(254), 1000(297) -->
+                        <line x1="84" y1="24" x2="84" y2="146" stroke="#e2e8f0" stroke-dasharray="2 2"/>
+                        <line x1="127" y1="24" x2="127" y2="146" stroke="#cbd5e1" stroke-dasharray="3 2"/>
+                        <line x1="169" y1="24" x2="169" y2="146" stroke="#e2e8f0" stroke-dasharray="2 2"/>
+                        <line x1="212" y1="24" x2="212" y2="146" stroke="#e2e8f0" stroke-dasharray="2 2"/>
+                        <line x1="254" y1="24" x2="254" y2="146" stroke="#94a3b8" stroke-dasharray="3 2"/>
+                        <line x1="297" y1="24" x2="297" y2="146" stroke="#e2e8f0" stroke-dasharray="2 2"/>
+
+                        <!-- Đường phổ IR chính -->
+                        <path d="${curvePath}" fill="none" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+
+                        <!-- Nhãn chú thích đỉnh peak -->
+                        ${labelsHTML}
+
+                        <!-- Nhãn trục tung %T -->
+                        <text x="37" y="29" text-anchor="end" fill="#475569" font-size="8.5" font-weight="700">100</text>
+                        <text x="37" y="88" text-anchor="end" fill="#475569" font-size="8.5" font-weight="700">50</text>
+                        <text x="37" y="146" text-anchor="end" fill="#475569" font-size="8.5" font-weight="700">0</text>
+                        <text x="12" y="88" text-anchor="middle" fill="#334155" font-size="9" font-weight="800" transform="rotate(-90 12 88)">Độ truyền qua (%T)</text>
+
+                        <!-- Nhãn trục hoành Số sóng (cm⁻¹) -->
+                        <text x="44" y="158" text-anchor="middle" fill="#334155" font-size="8.5" font-weight="700">4000</text>
+                        <text x="127" y="158" text-anchor="middle" fill="#334155" font-size="8.5" font-weight="700">3000</text>
+                        <text x="212" y="158" text-anchor="middle" fill="#334155" font-size="8.5" font-weight="700">2000</text>
+                        <text x="254" y="158" text-anchor="middle" fill="#334155" font-size="8.5" font-weight="700">1500</text>
+                        <text x="297" y="158" text-anchor="middle" fill="#334155" font-size="8.5" font-weight="700">1000</text>
+                        <text x="346" y="158" text-anchor="end" fill="#334155" font-size="8.5" font-weight="700">400</text>
+                        <text x="195" y="170" text-anchor="middle" fill="#0f172a" font-size="9.5" font-weight="800">Số sóng (cm⁻¹)</text>
+                    </svg>
+                </div>
+            `;
+        }
+
+        // -------------------- 3. DỮ LIỆU KIẾN THỨC 4 TRẠM --------------------
+
+        // TRẠM 1: BIỆT ĐỘI PHÁ ÁN – MÁY QUÉT PHỔ HỒNG NGOẠI (8 mẫu vật)
+        const stage1Samples = [
+            {
+                id: "s1_ethanol",
+                code: "MẪU #01",
+                name: "Dung dịch Cồn sát khuẩn",
+                formula: "C<sub>2</sub>H<sub>5</sub>OH",
+                profile: "alcohol",
+                annotations: [{ x: 96, y: 112, label: "3350 cm⁻¹ (tù)", color: "#0891b2" }],
+                question: "Quan sát phổ IR vừa quét: Tín hiệu tù, rộng đặc trưng ở vùng 3350 cm⁻¹ chứng minh mẫu vật chứa liên kết/nhóm chức nào?",
+                options: [
+                    { id: "oh_alc", text: "Nhóm –OH của Alcohol (3600 – 3200 cm⁻¹)", correct: true },
+                    { id: "co_carb", text: "Nhóm C=O của Ketone (1725 – 1705 cm⁻¹)", correct: false },
+                    { id: "cooh", text: "Nhóm –COOH của Carboxylic acid", correct: false }
+                ],
+                tip: "<strong>Mẹo đọc phổ nhanh:</strong> Peak tù, bầu rộng trong khoảng <span class='chem'>3600 – 3200 cm<sup>-1</sup></span> (không kèm peak nhọn ở <span class='chem'>1700 cm<sup>-1</sup></span>) là dấu hiệu kinh điển của nhóm <strong>–OH (alcohol)</strong>!"
+            },
+            {
+                id: "s1_acetic",
+                code: "MẪU #02",
+                name: "Mẫu Giấm ăn tinh khiết",
+                formula: "CH<sub>3</sub>COOH",
+                profile: "acid",
+                annotations: [
+                    { x: 124, y: 108, label: "3200–2500 (rộng)", color: "#e11d48" },
+                    { x: 236, y: 136, label: "1710 (C=O)", color: "#7c3aed" }
+                ],
+                question: "Phổ IR xuất hiện dải hấp thụ rất rộng trải dài 3200 – 2500 cm⁻¹ kết hợp mũi nhọn mạnh ở 1710 cm⁻¹. Đây là dấu hiệu của nhóm chức nào?",
+                options: [
+                    { id: "cooh", text: "Nhóm –COOH (Carboxylic acid)", correct: true },
+                    { id: "oh_alc", text: "Chỉ có nhóm –OH (Alcohol)", correct: false },
+                    { id: "nh_amine", text: "Nhóm –NH₂ (Amine bậc 1)", correct: false }
+                ],
+                tip: "<strong>Mẹo đọc phổ nhanh:</strong> Bộ đôi hoàn hảo của <strong>Carboxylic acid (–COOH)</strong> gồm: peak <strong>O–H</strong> rất rộng trải dài <span class='chem'>3300 – 2500 cm<sup>-1</sup></span> (trùm lên vùng C–H) + peak <strong>C=O</strong> nhọn mạnh ở <span class='chem'>1725 – 1700 cm<sup>-1</sup></span>."
+            },
+            {
+                id: "s1_acetone",
+                code: "MẪU #03",
+                name: "Nước rửa móng tay (Acetone)",
+                formula: "CH<sub>3</sub>COCH<sub>3</sub>",
+                profile: "ketone_ester",
+                annotations: [{ x: 235, y: 138, label: "1715 cm⁻¹ (nhọn)", color: "#7c3aed" }],
+                question: "Trên phổ IR không thấy tín hiệu ở vùng 3600 – 3200 cm⁻¹, nhưng nổi bật một mũi nhọn rất mạnh tại 1715 cm⁻¹. Đó là liên kết nào?",
+                options: [
+                    { id: "co_ketone", text: "Liên kết C=O của Ketone (1725 – 1705 cm⁻¹)", correct: true },
+                    { id: "oh_alc", text: "Liên kết O–H của Alcohol", correct: false },
+                    { id: "cc_triple", text: "Liên kết C≡C của Alkyne", correct: false }
+                ],
+                tip: "<strong>Mẹo đọc phổ nhanh:</strong> Mũi nhọn, sâu, mạnh ở vùng <span class='chem'>1750 – 1700 cm<sup>-1</sup></span> mà không có dải rộng O–H chứng tỏ có nhóm carbonyl <strong>C=O</strong> (ở đây là ketone tại <span class='chem'>1715 cm<sup>-1</sup></span>)."
+            },
+            {
+                id: "s1_ester",
+                code: "MẪU #04",
+                name: "Dung môi sơn (Ethyl acetate)",
+                formula: "CH<sub>3</sub>COOC<sub>2</sub>H<sub>5</sub>",
+                profile: "ketone_ester",
+                annotations: [{ x: 235, y: 138, label: "1740 cm⁻¹ (C=O)", color: "#7c3aed" }],
+                question: "Tín hiệu hấp thụ mạnh, nhọn tại 1740 cm⁻¹ (vùng 1750 – 1735 cm⁻¹) và không có peak O–H đặc trưng cho nhóm chức nào?",
+                options: [
+                    { id: "ester", text: "Nhóm chức Ester (–COO–)", correct: true },
+                    { id: "acid", text: "Nhóm Carboxylic acid (–COOH)", correct: false },
+                    { id: "amine", text: "Nhóm Amine (–NH₂)", correct: false }
+                ],
+                tip: "<strong>Mẹo đọc phổ nhanh:</strong> Ester (<strong>–COO–</strong>) có peak <strong>C=O</strong> nhọn, mạnh đặc trưng ở <span class='chem'>1750 – 1735 cm<sup>-1</sup></span> và hoàn toàn không có peak O–H ở trên <span class='chem'>3200 cm<sup>-1</sup></span>."
+            },
+            {
+                id: "s1_aldehyde",
+                code: "MẪU #05",
+                name: "Dung dịch Acetaldehyde",
+                formula: "CH<sub>3</sub>CHO",
+                profile: "aldehyde",
+                annotations: [
+                    { x: 146, y: 88, label: "2820 & 2720", color: "#d97706" },
+                    { x: 235, y: 137, label: "1725 (C=O)", color: "#7c3aed" }
+                ],
+                question: "Phổ IR ghi nhận peak C=O nhọn mạnh tại 1725 cm⁻¹ kèm cặp mũi C–H đặc trưng ở 2820 và 2720 cm⁻¹. Mẫu vật thuộc loại nào?",
+                options: [
+                    { id: "aldehyde", text: "Nhóm chức Aldehyde (–CH=O)", correct: true },
+                    { id: "alcohol", text: "Nhóm chức Alcohol (–OH)", correct: false },
+                    { id: "alkane", text: "Hydrocarbon no (Alkane)", correct: false }
+                ],
+                tip: "<strong>Mẹo đọc phổ nhanh:</strong> Aldehyde (<strong>–CH=O</strong>) có peak <strong>C=O</strong> mạnh ở <span class='chem'>1740 – 1720 cm<sup>-1</sup></span> kèm cặp tín hiệu C–H của nhóm –CHO tại <span class='chem'>2830 – 2695 cm<sup>-1</sup></span>."
+            },
+            {
+                id: "s1_hexane",
+                code: "MẪU #06",
+                name: "Dung môi tẩy dầu (Hexane)",
+                formula: "C<sub>6</sub>H<sub>14</sub>",
+                profile: "alkane",
+                annotations: [{ x: 131, y: 118, label: "2960–2850 (C–H)", color: "#059669" }],
+                question: "Vùng 3600 – 3200 cm⁻¹ và 1750 – 1700 cm⁻¹ đều phẳng lì, chỉ có cụm peak C–H ở 2960 – 2850 cm⁻¹. Kết luận nào đúng?",
+                options: [
+                    { id: "alkane", text: "Hydrocarbon no (chỉ có liên kết đơn C–H, C–C)", correct: true },
+                    { id: "acid", text: "Có chứa nhóm chức –COOH", correct: false },
+                    { id: "alcohol", text: "Có chứa nhóm chức –OH", correct: false }
+                ],
+                tip: "<strong>Mẹo đọc phổ nhanh:</strong> Khi vùng nhóm chức (<span class='chem'>3600–3200</span> và <span class='chem'>1800–1600 cm<sup>-1</sup></span>) trống trơn, chỉ thấy peak <strong>C–H no</strong> ngay bên phải mốc <span class='chem'>3000 cm<sup>-1</sup></span> (<span class='chem'>3000–2850 cm<sup>-1</sup></span>), đó là khung hydrocarbon no!"
+            },
+            {
+                id: "s1_amine",
+                code: "MẪU #07",
+                name: "Mẫu Ethylamine tinh khiết",
+                formula: "C<sub>2</sub>H<sub>5</sub>NH<sub>2</sub>",
+                profile: "amine",
+                annotations: [{ x: 95, y: 86, label: "3400 & 3320 (2 mũi)", color: "#db2777" }],
+                question: "Tại vùng 3500 – 3300 cm⁻¹ xuất hiện 2 mũi hấp thụ nhọn cạnh nhau thay vì 1 dải bầu tù rộng. Đây là tín hiệu của liên kết nào?",
+                options: [
+                    { id: "amine", text: "Liên kết N–H của Amine bậc 1 (–NH₂)", correct: true },
+                    { id: "alcohol", text: "Liên kết O–H của Alcohol", correct: false },
+                    { id: "ester", text: "Liên kết C=O của Ester", correct: false }
+                ],
+                tip: "<strong>Mẹo đọc phổ nhanh:</strong> Liên kết <strong>N–H</strong> hấp thụ ở vùng <span class='chem'>3500 – 3300 cm<sup>-1</sup></span> nhưng thanh mảnh và nhọn hơn O–H (amine bậc 1 –NH₂ cho 2 mũi nhọn, amine bậc 2 cho 1 mũi nhọn)."
+            },
+            {
+                id: "s1_alkyne",
+                code: "MẪU #08",
+                name: "Khí But-1-yne trong bình chứa",
+                formula: "CH≡C–CH<sub>2</sub>CH<sub>3</sub>",
+                profile: "alkyne",
+                annotations: [{ x: 200, y: 94, label: "2140 cm⁻¹ (C≡C)", color: "#ea580c" }],
+                question: "Ngay giữa vùng trống của phổ (tại số sóng 2140 cm⁻¹, nằm trong khoảng 2260 – 2100 cm⁻¹) có 1 mũi nhọn. Đó là liên kết gì?",
+                options: [
+                    { id: "alkyne", text: "Liên kết ba C≡C (Alkyne)", correct: true },
+                    { id: "co", text: "Liên kết đôi C=O (Ketone)", correct: false },
+                    { id: "oh", text: "Liên kết O–H (Carboxylic acid)", correct: false }
+                ],
+                tip: "<strong>Mẹo đọc phổ nhanh:</strong> Khoảng <span class='chem'>2260 – 2100 cm<sup>-1</sup></span> là vùng ít tín hiệu nhiễu; mũi nhọn xuất hiện tại đây đặc trưng cho liên kết ba <strong>C≡C</strong> (alkyne) hoặc <strong>C≡N</strong> (nitrile)."
+            }
+        ];
+
+        // TRẠM 2: BẢN ĐỒ TẦN SỐ – GHÉP CẶP TÍN HIỆU VÀO VÙNG SỐ SÓNG (6 cặp Tap-to-Match)
+        const stage2Pairs = [
+            {
+                id: "p1",
+                bond: "O–H (Alcohol)",
+                desc: "Mũi tù, bầu rộng",
+                wave: "3600 – 3200 cm⁻¹",
+                explain: "Liên kết <strong>O–H</strong> trong alcohol tạo liên kết hydrogen nên cho peak tù, rộng ở <span class='chem'>3600 – 3200 cm<sup>-1</sup></span>."
+            },
+            {
+                id: "p2",
+                bond: "O–H (Carboxylic acid)",
+                desc: "Rất rộng, trùm cả vùng C–H",
+                wave: "3300 – 2500 cm⁻¹",
+                explain: "Liên kết <strong>O–H</strong> của carboxylic acid tạo dimer bền vững nên dải hấp thụ rất rộng, trải dài <span class='chem'>3300 – 2500 cm<sup>-1</sup></span>."
+            },
+            {
+                id: "p3",
+                bond: "C=O (Carbonyl)",
+                desc: "Mũi nhọn, cường độ mạnh",
+                wave: "1750 – 1700 cm⁻¹",
+                explain: "Nhóm <strong>C=O</strong> (aldehyde, ketone, carboxylic acid, ester) luôn cho peak hấp thụ mạnh, nhọn ở <span class='chem'>1750 – 1700 cm<sup>-1</sup></span>."
+            },
+            {
+                id: "p4",
+                bond: "N–H (Amine)",
+                desc: "1 hoặc 2 mũi nhọn trung bình",
+                wave: "3500 – 3300 cm⁻¹",
+                explain: "Liên kết <strong>N–H</strong> của amine hấp thụ ở <span class='chem'>3500 – 3300 cm<sup>-1</sup></span> (amine bậc 1 có 2 mũi, bậc 2 có 1 mũi)."
+            },
+            {
+                id: "p5",
+                bond: "C–H (Alkane, no)",
+                desc: "Nhọn, ngay bên phải mốc 3000",
+                wave: "3000 – 2850 cm⁻¹",
+                explain: "Liên kết <strong>C–H</strong> của carbon lai hóa sp³ (mạch no) luôn nằm dưới mốc 3000, trong khoảng <span class='chem'>3000 – 2850 cm<sup>-1</sup></span>."
+            },
+            {
+                id: "p6",
+                bond: "C≡C (Alkyne)",
+                desc: "Mũi nhọn ở vùng trống giữa phổ",
+                wave: "2260 – 2100 cm⁻¹",
+                explain: "Liên kết ba <strong>C≡C</strong> dao động ở vùng số sóng đặc trưng <span class='chem'>2260 – 2100 cm<sup>-1</sup></span>."
+            }
+        ];
+
+        // TRẠM 3: PHÒNG THÍ NGHIỆM BỊ XÁO TRỘN – DÁN NHÃN 4 LỌ HÓA CHẤT
+        const stage3Bottles = [
+            {
+                bottleName: "LỌ HÓA CHẤT A",
+                profile: "acid",
+                annotations: [
+                    { x: 124, y: 108, label: "3200–2500 (O–H)", color: "#e11d48" },
+                    { x: 236, y: 136, label: "1710 (C=O)", color: "#7c3aed" }
+                ],
+                clue: "Chất lỏng không màu, vị chua, làm quỳ tím hóa đỏ.",
+                correctFormula: "CH<sub>3</sub>COOH",
+                options: [
+                    { formula: "CH<sub>3</sub>COOH", name: "Acetic acid", isCorrect: true },
+                    { formula: "CH<sub>3</sub>CH<sub>2</sub>OH", name: "Ethanol", isCorrect: false },
+                    { formula: "CH<sub>3</sub>COCH<sub>3</sub>", name: "Acetone", isCorrect: false },
+                    { formula: "CH<sub>3</sub>CHO", name: "Acetaldehyde", isCorrect: false }
+                ],
+                explanation: "Phổ IR của Lọ A có cả dải rộng <span class='chem'>3200 – 2500 cm<sup>-1</sup></span> (O–H acid) lẫn peak nhọn <span class='chem'>1710 cm<sup>-1</sup></span> (C=O) → Chính là <strong>Acetic acid (<span class='chem'>CH<sub>3</sub>COOH</span>)</strong>."
+            },
+            {
+                bottleName: "LỌ HÓA CHẤT B",
+                profile: "alcohol",
+                annotations: [
+                    { x: 96, y: 112, label: "3350 (O–H tù)", color: "#0891b2" },
+                    { x: 131, y: 92, label: "2970 (C–H)", color: "#059669" }
+                ],
+                clue: "Chất lỏng dễ bay hơi, dùng pha chế cồn sát khuẩn, tan vô hạn trong nước.",
+                correctFormula: "CH<sub>3</sub>CH<sub>2</sub>OH",
+                options: [
+                    { formula: "CH<sub>3</sub>CH<sub>2</sub>OH", name: "Ethanol", isCorrect: true },
+                    { formula: "CH<sub>3</sub>COOH", name: "Acetic acid", isCorrect: false },
+                    { formula: "CH<sub>3</sub>COCH<sub>3</sub>", name: "Acetone", isCorrect: false },
+                    { formula: "CH<sub>3</sub>CHO", name: "Acetaldehyde", isCorrect: false }
+                ],
+                explanation: "Phổ IR của Lọ B có peak tù rộng đặc trưng tại <span class='chem'>3350 cm<sup>-1</sup></span> (O–H alcohol) và hoàn toàn không có peak C=O ở <span class='chem'>1700 cm<sup>-1</sup></span> → Chính là <strong>Ethanol (<span class='chem'>CH<sub>3</sub>CH<sub>2</sub>OH</span>)</strong>."
+            },
+            {
+                bottleName: "LỌ HÓA CHẤT C",
+                profile: "aldehyde",
+                annotations: [
+                    { x: 146, y: 88, label: "2820 & 2720", color: "#d97706" },
+                    { x: 235, y: 137, label: "1725 (C=O)", color: "#7c3aed" }
+                ],
+                clue: "Chất lỏng dễ bay hơi, tham gia phản ứng tráng bạc với thuốc thử Tollens.",
+                correctFormula: "CH<sub>3</sub>CHO",
+                options: [
+                    { formula: "CH<sub>3</sub>CHO", name: "Acetaldehyde", isCorrect: true },
+                    { formula: "CH<sub>3</sub>COCH<sub>3</sub>", name: "Acetone", isCorrect: false },
+                    { formula: "CH<sub>3</sub>CH<sub>2</sub>OH", name: "Ethanol", isCorrect: false },
+                    { formula: "CH<sub>3</sub>COOH", name: "Acetic acid", isCorrect: false }
+                ],
+                explanation: "Phổ IR của Lọ C có peak C=O nhọn mạnh tại <span class='chem'>1725 cm<sup>-1</sup></span> đi kèm cặp peak C–H của nhóm –CHO ở <span class='chem'>2820 & 2720 cm<sup>-1</sup></span> → Chính là <strong>Acetaldehyde (<span class='chem'>CH<sub>3</sub>CHO</span>)</strong>."
+            },
+            {
+                bottleName: "LỌ HÓA CHẤT D",
+                profile: "ketone_ester",
+                annotations: [
+                    { x: 131, y: 84, label: "2960 (C–H)", color: "#059669" },
+                    { x: 235, y: 138, label: "1715 (C=O)", color: "#7c3aed" }
+                ],
+                clue: "Dung môi hòa tan sơn móng tay, không phản ứng tráng bạc.",
+                correctFormula: "CH<sub>3</sub>COCH<sub>3</sub>",
+                options: [
+                    { formula: "CH<sub>3</sub>COCH<sub>3</sub>", name: "Acetone", isCorrect: true },
+                    { formula: "CH<sub>3</sub>CHO", name: "Acetaldehyde", isCorrect: false },
+                    { formula: "CH<sub>3</sub>COOH", name: "Acetic acid", isCorrect: false },
+                    { formula: "CH<sub>3</sub>CH<sub>2</sub>OH", name: "Ethanol", isCorrect: false }
+                ],
+                explanation: "Phổ IR của Lọ D chỉ có peak C=O nhọn mạnh tại <span class='chem'>1715 cm<sup>-1</sup></span>, không có O–H (<span class='chem'>3600–3200</span>) và không có cặp C–H aldehyde (<span class='chem'>2720 cm<sup>-1</sup></span>) → Chính là <strong>Acetone (<span class='chem'>CH<sub>3</sub>COCH<sub>3</sub></span>)</strong>."
+            }
+        ];
+
+        // TRẠM 4: THỬ THÁCH CHUYÊN GIA – GIẢI MÃ HỒ SƠ HỢP CHẤT X (4 câu tư duy cao)
+        const stage4Challenges = [
+            {
+                badge: "Hồ sơ #1 • Phân biệt đồng phân cấu tạo",
+                question: "Hai hợp chất hữu cơ X và Y có cùng công thức phân tử <span class='chem'>C<sub>2</sub>H<sub>6</sub>O</span> (gồm ethanol <span class='chem'>CH<sub>3</sub>CH<sub>2</sub>OH</span> và dimethyl ether <span class='chem'>CH<sub>3</sub>OCH<sub>3</sub></span>). Trên phổ IR của chất X thấy xuất hiện peak tù, rộng ở vùng <span class='chem'>3350 cm<sup>-1</sup></span>, còn chất Y thì KHÔNG có tín hiệu này. Kết luận nào sau đây ĐÚNG?",
+                options: [
+                    { text: "X là ethanol (CH₃CH₂OH) vì có liên kết O–H; Y là dimethyl ether (CH₃OCH₃).", isCorrect: true },
+                    { text: "X là dimethyl ether (CH₃OCH₃) vì liên kết C–O hấp thụ mạnh ở 3350 cm⁻¹.", isCorrect: false },
+                    { text: "Cả X và Y đều chứa nhóm chức aldehyde (–CHO).", isCorrect: false },
+                    { text: "Không thể dùng phổ IR để phân biệt hai đồng phân có cùng công thức phân tử.", isCorrect: false }
+                ],
+                explanation: "Ethanol (<span class='chem'>CH<sub>3</sub>CH<sub>2</sub>OH</span>) có nhóm <strong>–OH</strong> nên xuất hiện peak tù rộng ở <span class='chem'>3600 – 3200 cm<sup>-1</sup></span>, trong khi dimethyl ether (<span class='chem'>CH<sub>3</sub>–O–CH<sub>3</sub></span>) không có liên kết O–H nên vùng này hoàn toàn trống!"
+            },
+            {
+                badge: "Hồ sơ #2 • Theo dõi phản ứng ester hóa",
+                question: "Đun nóng hỗn hợp acetic acid (<span class='chem'>CH<sub>3</sub>COOH</span>) và ethanol (<span class='chem'>C<sub>2</sub>H<sub>5</sub>OH</span>) có xúc tác <span class='chem'>H<sub>2</sub>SO<sub>4</sub></span> đặc thu được sản phẩm hữu cơ tinh khiết Z. Khi đo phổ IR của chất Z tinh khiết, dấu hiệu nào chứng tỏ phản ứng tạo ester đã hoàn tất và không còn lẫn acid hay alcohol dư?",
+                options: [
+                    { text: "Biến mất hoàn toàn dải hấp thụ O–H ở vùng 3600 – 2500 cm⁻¹ và xuất hiện peak nhọn mạnh C=O ở 1740 cm⁻¹.", isCorrect: true },
+                    { text: "Xuất hiện thêm một dải hấp thụ O–H rất rộng từ 3600 đến 2500 cm⁻¹.", isCorrect: false },
+                    { text: "Biến mất hoàn toàn peak C=O ở vùng 1750 – 1700 cm⁻¹.", isCorrect: false },
+                    { text: "Xuất hiện peak nhọn đặc trưng của liên kết ba C≡C tại 2150 cm⁻¹.", isCorrect: false }
+                ],
+                explanation: "Cả chất đầu (<span class='chem'>CH<sub>3</sub>COOH</span> và <span class='chem'>C<sub>2</sub>H<sub>5</sub>OH</span>) đều có nhóm <strong>–OH</strong>, nhưng sản phẩm ester (<span class='chem'>CH<sub>3</sub>COOC<sub>2</sub>H<sub>5</sub></span>) thì <strong>không còn nhóm –OH</strong> mà chỉ có nhóm <strong>C=O</strong> của ester (<span class='chem'>1740 cm<sup>-1</sup></span>)."
+            },
+            {
+                badge: "Hồ sơ #3 • Nguyên lí đo phổ hồng ngoại",
+                question: "Phát biểu nào sau đây là SAI khi nói về phương pháp phổ hồng ngoại (IR) trong hóa học hữu cơ?",
+                options: [
+                    { text: "Phổ IR giúp xác định chính xác phân tử khối (M) của hợp chất hữu cơ thông qua peak ion phân tử.", isCorrect: true },
+                    { text: "Phổ IR dựa trên sự hấp thụ bức xạ hồng ngoại của các dao động liên kết hóa học trong phân tử.", isCorrect: false },
+                    { text: "Vùng số sóng từ 4000 đến 1500 cm⁻¹ thường được dùng để nhận biết các nhóm chức đặc trưng.", isCorrect: false },
+                    { text: "Trục hoành của phổ IR biểu diễn số sóng (cm⁻¹) và trục tung biểu diễn độ truyền qua (%T).", isCorrect: false }
+                ],
+                explanation: "Xác định phân tử khối (M) qua peak ion phân tử [M<sup>+</sup>] là vai trò của <strong>phổ khối lượng (MS)</strong>, còn <strong>phổ hồng ngoại (IR)</strong> dùng để xác định các <em>liên kết và nhóm chức</em> trong phân tử!"
+            },
+            {
+                badge: "Hồ sơ #4 • Giải mã cấu tạo hợp chất X",
+                question: "Hợp chất hữu cơ X mạch hở có công thức phân tử <span class='chem'>C<sub>3</sub>H<sub>6</sub>O<sub>2</sub></span>. Phổ IR của X cho thấy có một peak hấp thụ rất rộng ở vùng <span class='chem'>3300 – 2500 cm<sup>-1</sup></span> và một peak nhọn, mạnh ở <span class='chem'>1712 cm<sup>-1</sup></span>. Công thức cấu tạo của X là:",
+                options: [
+                    { text: "CH₃CH₂COOH (Propanoic acid)", isCorrect: true },
+                    { text: "CH₃COOCH₃ (Methyl acetate)", isCorrect: false },
+                    { text: "HCOOCH₂CH₃ (Ethyl formate)", isCorrect: false },
+                    { text: "HOCH₂CH₂CHO (3-hydroxypropanal)", isCorrect: false }
+                ],
+                explanation: "Peak rất rộng trải dài <span class='chem'>3300 – 2500 cm<sup>-1</sup></span> kết hợp với peak C=O mạnh ở <span class='chem'>1712 cm<sup>-1</sup></span> là dấu ấn không thể nhầm lẫn của nhóm <strong>–COOH</strong>. Với CTPT <span class='chem'>C<sub>3</sub>H<sub>6</sub>O<sub>2</sub></span>, X là <strong><span class='chem'>CH<sub>3</sub>CH<sub>2</sub>COOH</span></strong> (hai chất ester đồng phân không có peak O–H)."
+            }
+        ];
+
+        // -------------------- 4. TRẠNG THÁI TRÒ CHƠI (GAME STATE) --------------------
+        let state = {
+            playerName: "",
+            playerClass: "",
+            score: 0,
+            combo: 0,
+            currentStage: 1,
+            subIndex: 0,
+            startTime: null,
+            // Thống kê từng trạm
+            s1Resolved: {}, // { id: { isCorrect, chosenId } }
+            s1ActiveId: "s1_ethanol",
+            s1Scanned: {},  // { id: true }
+            s2Matched: [],  // danh sách id đã ghép đúng
+            s2SelectedBond: null,
+            s2SelectedWave: null,
+            s2ShuffledWaves: [],
+            s2FirstTryCorrect: {}, // theo dõi đúng ngay lần đầu
+            s3Index: 0,
+            s4Index: 0,
+            correctPerStage: { 1: 0, 2: 0, 3: 0, 4: 0 },
+            pendingNext: null
+        };
+
+        // -------------------- 5. ĐIỀU KHIỂN KHỞI ĐỘNG & ĐIỂM SỐ --------------------
+        function startGame() {
+            const nameVal = document.getElementById('input-name').value.trim();
+            const classVal = document.getElementById('input-class').value.trim();
+            const errEl = document.getElementById('name-error');
+
+            if (!nameVal) {
+                errEl.classList.remove('hidden');
+                document.getElementById('input-name').classList.add('border-rose-500');
+                document.getElementById('input-name').focus();
+                return;
+            }
+
+            errEl.classList.add('hidden');
+            initAudio();
+
+            state.playerName = nameVal;
+            state.playerClass = classVal;
+            state.score = 0;
+            state.combo = 0;
+            state.currentStage = 1;
+            state.startTime = Date.now();
+            state.s1Resolved = {};
+            state.s1ActiveId = stage1Samples[0].id;
+            state.s1Scanned = { [stage1Samples[0].id]: true };
+            state.s2Matched = [];
+            state.s2SelectedBond = null;
+            state.s2SelectedWave = null;
+            state.s2FirstTryCorrect = {};
+            state.s3Index = 0;
+            state.s4Index = 0;
+            state.correctPerStage = { 1: 0, 2: 0, 3: 0, 4: 0 };
+
+            // Xáo trộn cột số sóng ở Trạm 2
+            state.s2ShuffledWaves = [...stage2Pairs]
+                .map(p => ({ id: p.id, wave: p.wave }))
+                .sort(() => Math.random() - 0.5);
+
+            const label = classVal ? `${nameVal} (${classVal})` : nameVal;
+            document.getElementById('header-player-name').textContent = label;
+            updateHeaderUI();
+
+            document.getElementById('screen-welcome').classList.add('hidden');
+            document.getElementById('screen-result').classList.add('hidden');
+            document.getElementById('game-header').classList.remove('hidden');
+            document.getElementById('screen-play').classList.remove('hidden');
+
+            renderStage();
+        }
+
+        function updateHeaderUI() {
+            document.getElementById('score-display').textContent = state.score;
+            const comboEl = document.getElementById('combo-badge');
+            if (state.combo >= 2) {
+                comboEl.classList.remove('hidden');
+                comboEl.classList.add('flex');
+                document.getElementById('combo-count').textContent = `x${state.combo}`;
+            } else {
+                comboEl.classList.add('hidden');
+                comboEl.classList.remove('flex');
+            }
+
+            const titles = {
+                1: "Trạm 1/4: Máy Quét Phổ IR",
+                2: "Trạm 2/4: Bản Đồ Tần Số",
+                3: "Trạm 3/4: Truy Tìm Nhãn Lọ",
+                4: "Trạm 4/4: Hồ Sơ Hợp Chất X"
+            };
+            document.getElementById('header-stage-label').textContent = titles[state.currentStage];
+
+            for (let i = 1; i <= 4; i++) {
+                const bar = document.getElementById(`prog-${i}`);
+                if (i < state.currentStage) bar.className = "h-1.5 rounded-full bg-emerald-500 transition-all duration-300";
+                else if (i === state.currentStage) bar.className = "h-1.5 rounded-full bg-cyan-500 transition-all duration-300";
+                else bar.className = "h-1.5 rounded-full bg-slate-200 transition-all duration-300";
+            }
+        }
+
+        function recordAnswer(stageNum, isCorrect) {
+            if (isCorrect) {
+                state.combo++;
+                state.correctPerStage[stageNum]++;
+                const bonus = Math.min((state.combo - 1) * 15, 60);
+                const pts = 100 + bonus;
+                state.score += pts;
+                playSound('correct');
+                updateHeaderUI();
+                return pts;
+            } else {
+                state.combo = 0;
+                playSound('wrong');
+                updateHeaderUI();
+                return 0;
+            }
+        }
+
+        function showFeedbackModal(isCorrect, pts, htmlText, onNext) {
+            const modal = document.getElementById('feedback-modal');
+            const box = document.getElementById('feedback-box');
+            const icon = document.getElementById('fb-icon');
+            const title = document.getElementById('fb-title');
+            const points = document.getElementById('fb-points');
+            const exp = document.getElementById('fb-explanation');
+            const btn = document.getElementById('fb-next-btn');
+
+            if (isCorrect) {
+                box.className = "bg-white w-full max-w-lg rounded-3xl p-5 sm:p-6 shadow-2xl border-2 border-cyan-400 animate-pop space-y-4";
+                icon.className = "w-11 h-11 rounded-2xl bg-cyan-100 text-cyan-700 flex items-center justify-center text-2xl shrink-0";
+                icon.textContent = "🎯";
+                title.className = "font-display font-extrabold text-lg sm:text-xl text-cyan-800";
+                title.textContent = state.combo >= 3 ? `Xuất sắc! Chuỗi ${state.combo} câu đúng!` : "Chính xác!";
+                points.className = "text-xs font-extrabold text-amber-600";
+                points.textContent = `+${pts} XP • Cộng dồn vào hồ sơ`;
+                btn.className = "btn-3d w-full py-3 px-5 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 text-white font-bold text-sm sm:text-base cursor-pointer";
+            } else {
+                box.className = "bg-white w-full max-w-lg rounded-3xl p-5 sm:p-6 shadow-2xl border-2 border-rose-400 animate-pop space-y-4";
+                icon.className = "w-11 h-11 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center text-2xl shrink-0";
+                icon.textContent = "💡";
+                title.className = "font-display font-extrabold text-lg sm:text-xl text-rose-700";
+                title.textContent = "Chưa chính xác! Ghi nhớ mẹo sau:";
+                points.className = "text-xs font-bold text-slate-500";
+                points.textContent = "Xem phân tích phổ IR bên dưới nhé";
+                btn.className = "btn-3d w-full py-3 px-5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm sm:text-base cursor-pointer";
+            }
+
+            exp.innerHTML = htmlText;
+            state.pendingNext = onNext;
+            modal.classList.remove('hidden');
+        }
+
+        function closeFeedbackAndNext() {
+            document.getElementById('feedback-modal').classList.add('hidden');
+            if (typeof state.pendingNext === 'function') {
+                state.pendingNext();
+            }
+        }
+
+        // -------------------- 6. RENDER TỪNG TRẠM --------------------
+        function renderStage() {
+            updateHeaderUI();
+            if (state.currentStage === 1) renderStage1();
+            else if (state.currentStage === 2) renderStage2();
+            else if (state.currentStage === 3) renderStage3();
+            else if (state.currentStage === 4) renderStage4();
+        }
+
+        // ==================== TRẠM 1: BIỆT ĐỘI PHÁ ÁN – MÁY QUÉT PHỔ IR ====================
+        function selectStage1Sample(id) {
+            state.s1ActiveId = id;
+            state.s1Scanned[id] = true;
+            playSound('scan');
+            renderStage1();
+        }
+
+        function renderStage1() {
+            const container = document.getElementById('stage-container');
+            const resolvedCount = Object.keys(state.s1Resolved).length;
+            const total = stage1Samples.length;
+            const active = stage1Samples.find(s => s.id === state.s1ActiveId) || stage1Samples[0];
+            const res = state.s1Resolved[active.id];
+
+            // Khay 8 lọ mẫu vật (2 hàng x 4 cột trên mobile/desktop)
+            const samplesGrid = stage1Samples.map((s, idx) => {
+                const r = state.s1Resolved[s.id];
+                const isSelected = s.id === active.id;
+                let borderCls = "bg-white border-slate-200 hover:border-cyan-400";
+                let badge = `<span class="text-[10px] font-bold text-slate-400">#0${idx + 1}</span>`;
+
+                if (r) {
+                    if (r.isCorrect) {
+                        borderCls = "bg-emerald-50 border-emerald-400";
+                        badge = `<span class="text-[10px] font-extrabold text-emerald-700">✅ Đúng</span>`;
+                    } else {
+                        borderCls = "bg-rose-50 border-rose-300";
+                        badge = `<span class="text-[10px] font-extrabold text-rose-600">💡 Đã xem</span>`;
+                    }
+                }
+                if (isSelected) {
+                    borderCls += " ring-2 ring-cyan-500 border-cyan-600 shadow-md";
+                }
+
+                return `
+                    <button onclick="selectStage1Sample('${s.id}')" class="min-h-[68px] p-2 rounded-2xl border-2 transition flex flex-col items-center justify-between text-center cursor-pointer ${borderCls}">
+                        <div class="w-full flex items-center justify-between">
+                            ${badge}
+                            ${isSelected ? '<span class="w-2 h-2 rounded-full bg-cyan-500 animate-ping"></span>' : ''}
+                        </div>
+                        <span class="text-lg my-0.5">🧪</span>
+                        <span class="chem text-[11px] font-extrabold text-slate-800 leading-tight">${s.formula}</span>
+                    </button>
+                `;
+            }).join('');
+
+            // Các lựa chọn hoặc kết quả đã giải mã
+            let interactionHTML = "";
+            if (res) {
+                interactionHTML = `
+                    <div class="mt-3 p-3.5 rounded-2xl ${res.isCorrect ? 'bg-emerald-50 border border-emerald-300 text-emerald-950' : 'bg-rose-50 border border-rose-300 text-rose-950'} text-xs sm:text-sm leading-relaxed">
+                        <p class="font-extrabold mb-1">${res.isCorrect ? '✅ HỒ SƠ ĐÃ XÁC MINH:' : '🔍 KẾT LUẬN PHÂN TÍCH:'}</p>
+                        <p>${active.tip}</p>
+                    </div>
+                `;
+            } else {
+                interactionHTML = `
+                    <div class="mt-3 space-y-2">
+                        <p class="text-xs sm:text-sm font-bold text-slate-800 leading-snug">${active.question}</p>
+                        <div class="grid grid-cols-1 gap-2">
+                            ${active.options.map((opt, i) => `
+                                <button onclick="submitStage1Answer(${i})" class="btn-3d text-left px-3.5 py-2.5 rounded-xl bg-white hover:bg-cyan-50 border-2 border-slate-200 hover:border-cyan-500 text-xs sm:text-sm font-bold text-slate-800 flex items-center gap-2.5 cursor-pointer">
+                                    <span class="w-6 h-6 rounded-lg bg-cyan-100 text-cyan-800 font-extrabold text-xs flex items-center justify-center shrink-0">${['A','B','C'][i]}</span>
+                                    <span class="chem">${opt.text}</span>
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            const nextStageBtn = resolvedCount === total ? `
+                <div class="pt-2 animate-pop">
+                    <button onclick="goStage(2)" class="btn-3d w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-cyan-500 to-indigo-600 text-white font-display font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer">
+                        <span>🎉 HOÀN THÀNH 8/8 MẪU! SANG TRẠM 2 ➔</span>
+                    </button>
+                </div>
+            ` : `
+                <p class="text-center text-xs font-semibold text-slate-500">
+                    👆 Chạm vào từng lọ mẫu vật bên dưới để chiếu tia hồng ngoại và đọc phổ!
+                </p>
+            `;
+
+            container.innerHTML = `
+                <div class="space-y-3.5 animate-pop">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <span class="px-3 py-1 rounded-full bg-cyan-100 text-cyan-900 text-xs font-extrabold">
+                            📡 TRẠM 1 • MÁY QUÉT PHỔ HỒNG NGOẠI
+                        </span>
+                        <span class="px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-800 text-xs font-extrabold">
+                            Đã giải mã: ${resolvedCount}/${total} mẫu
+                        </span>
+                    </div>
+
+                    <!-- Khung Máy Quét Phổ IR -->
+                    <div class="rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-3.5 sm:p-5 text-white shadow-lg border border-cyan-500/40 relative overflow-hidden">
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+                                <span class="text-xs font-extrabold tracking-wide text-cyan-300">${active.code}: ${active.name}</span>
+                            </div>
+                            <span class="chem px-2.5 py-0.5 rounded-lg bg-white/15 text-amber-300 font-extrabold text-xs sm:text-sm">
+                                ${active.formula}
+                            </span>
+                        </div>
+
+                        <!-- Màn hình hiển thị đồ thị phổ IR kèm hiệu ứng tia quét -->
+                        <div class="relative">
+                            ${renderIRSpectrumSVG(active.profile, active.annotations)}
+                            ${!res ? `<div class="ir-laser-beam absolute top-2 bottom-2 left-2 w-1 bg-rose-500/70 shadow-[0_0_10px_#f43f5e] pointer-events-none rounded-full"></div>` : ''}
+                        </div>
+                    </div>
+
+                    <!-- Khu vực câu hỏi / giải thích -->
+                    ${interactionHTML}
+
+                    <!-- Khay 8 mẫu vật -->
+                    <div class="grid grid-cols-4 gap-1.5 sm:gap-2.5 pt-1">
+                        ${samplesGrid}
+                    </div>
+
+                    ${nextStageBtn}
+                </div>
+            `;
+        }
+
+        function submitStage1Answer(optIndex) {
+            const active = stage1Samples.find(s => s.id === state.s1ActiveId);
+            if (!active || state.s1Resolved[active.id]) return;
+
+            const chosen = active.options[optIndex];
+            const pts = recordAnswer(1, chosen.correct);
+            state.stage1Resolved[active.id] = { isCorrect: chosen.correct, chosenIdx: optIndex };
+
+            const nextSample = stage1Samples.find(s => !state.s1Resolved[s.id]);
+
+            showFeedbackModal(
+                chosen.correct,
+                pts,
+                `<div class="space-y-1.5">
+                    <p class="font-bold text-slate-900">${active.name} (<span class="chem">${active.formula}</span>)</p>
+                    <p>${active.tip}</p>
+                </div>`,
+                () => {
+                    if (nextSample) {
+                        state.s1ActiveId = nextSample.id;
+                        state.s1Scanned[nextSample.id] = true;
+                    }
+                    renderStage1();
+                }
+            );
+        }
+
+        function goStage(num) {
+            state.currentStage = num;
+            renderStage();
+        }
+
+        // ==================== TRẠM 2: BẢN ĐỒ TẦN SỐ (TAP-TO-MATCH) ====================
+        function selectStage2Bond(id) {
+            if (state.s2Matched.includes(id)) return;
+            state.s2SelectedBond = (state.s2SelectedBond === id) ? null : id;
+            checkStage2Match();
+        }
+
+        function selectStage2Wave(id) {
+            if (state.s2Matched.includes(id)) return;
+            state.s2SelectedWave = (state.s2SelectedWave === id) ? null : id;
+            checkStage2Match();
+        }
+
+        function checkStage2Match() {
+            if (state.s2SelectedBond && state.s2SelectedWave) {
+                const bondId = state.s2SelectedBond;
+                const waveId = state.s2SelectedWave;
+                const pair = stage2Pairs.find(p => p.id === bondId);
+
+                if (bondId === waveId) {
+                    // Ghép đúng!
+                    state.s2Matched.push(bondId);
+                    if (state.s2FirstTryCorrect[bondId] === undefined) {
+                        state.s2FirstTryCorrect[bondId] = true;
+                    }
+                    const pts = recordAnswer(2, true);
+                    state.s2SelectedBond = null;
+                    state.s2SelectedWave = null;
+                    renderStage2();
+                } else {
+                    // Ghép nhầm
+                    state.s2FirstTryCorrect[bondId] = false;
+                    recordAnswer(2, false);
+                    state.s2SelectedBond = null;
+                    state.s2SelectedWave = null;
+                    renderStage2(true);
+                }
+            } else {
+                renderStage2();
+            }
+        }
+
+        function renderStage2(shakeError = false) {
+            const container = document.getElementById('stage-container');
+            const matchedCount = state.s2Matched.length;
+            const total = stage2Pairs.length;
+
+            const leftCards = stage2Pairs.map(p => {
+                const isDone = state.s2Matched.includes(p.id);
+                const isSel = state.s2SelectedBond === p.id;
+                let cls = "bg-white border-slate-200 hover:border-violet-400 text-slate-800";
+                if (isDone) cls = "bg-emerald-50 border-emerald-400 text-emerald-800 opacity-75 cursor-default";
+                else if (isSel) cls = "bg-violet-600 border-violet-700 text-white shadow-md scale-[1.02]";
+
+                return `
+                    <button onclick="selectStage2Bond('${p.id}')" ${isDone ? 'disabled' : ''} class="min-h-[58px] w-full p-2.5 sm:p-3 rounded-2xl border-2 text-left transition flex items-center justify-between gap-2 cursor-pointer ${cls}">
+                        <div class="min-w-0">
+                            <p class="font-extrabold text-xs sm:text-sm leading-tight">${p.bond}</p>
+                            <p class="text-[11px] ${isSel ? 'text-violet-100' : 'text-slate-500'} mt-0.5 leading-tight">${p.desc}</p>
+                        </div>
+                        <span class="text-sm shrink-0">${isDone ? '✅' : (isSel ? '🔗' : '•')}</span>
+                    </button>
+                `;
+            }).join('');
+
+            const rightCards = state.s2ShuffledWaves.map(w => {
+                const isDone = state.s2Matched.includes(w.id);
+                const isSel = state.s2SelectedWave === w.id;
+                let cls = "bg-white border-slate-200 hover:border-cyan-400 text-slate-800";
+                if (isDone) cls = "bg-emerald-50 border-emerald-400 text-emerald-800 opacity-75 cursor-default";
+                else if (isSel) cls = "bg-cyan-600 border-cyan-700 text-white shadow-md scale-[1.02]";
+
+                return `
+                    <button onclick="selectStage2Wave('${w.id}')" ${isDone ? 'disabled' : ''} class="min-h-[58px] w-full p-2.5 sm:p-3 rounded-2xl border-2 text-center transition flex items-center justify-center gap-1.5 cursor-pointer ${cls}">
+                        <span class="chem font-extrabold text-xs sm:text-sm">${w.wave}</span>
+                        ${isDone ? '<span class="text-xs">✅</span>' : ''}
+                    </button>
+                `;
+            }).join('');
+
+            const finishBanner = matchedCount === total ? `
+                <div class="pt-2 animate-pop">
+                    <button onclick="goStage(3)" class="btn-3d w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-violet-600 to-rose-500 text-white font-display font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer">
+                        <span>🎯 ĐÃ NỐI ĐỦ 6 TẦN SỐ! SANG TRẠM 3 ➔</span>
+                    </button>
+                </div>
+            ` : `
+                <p class="text-center text-xs font-semibold text-slate-500">
+                    👆 Chạm 1 thẻ ở cột <strong>Liên kết</strong> rồi chạm 1 thẻ ở cột <strong>Số sóng</strong> tương ứng để nối cặp!
+                </p>
+            `;
+
+            container.innerHTML = `
+                <div class="space-y-3.5 ${shakeError ? 'animate-wiggle' : 'animate-pop'}">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <span class="px-3 py-1 rounded-full bg-violet-100 text-violet-900 text-xs font-extrabold">
+                            🗺️ TRẠM 2 • BẢN ĐỒ TẦN SỐ HỒNG NGOẠI
+                        </span>
+                        <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-extrabold">
+                            Đã ghép: ${matchedCount}/${total} cặp
+                        </span>
+                    </div>
+
+                    ${shakeError ? `
+                        <div class="p-2.5 rounded-xl bg-rose-100 border border-rose-300 text-rose-800 text-xs font-bold text-center">
+                            ⚠️ Hai thẻ chưa khớp tần số! Hãy thử lại hoặc bấm nút <strong>"📖 Bảng IR"</strong> ở góc trên để tra cứu nhé!
+                        </div>
+                    ` : ''}
+
+                    <!-- Bảng ghép 2 cột tối ưu cho màn hình cảm ứng điện thoại -->
+                    <div class="grid grid-cols-2 gap-2 sm:gap-3">
+                        <div class="space-y-2">
+                            <p class="text-[11px] font-extrabold uppercase tracking-wider text-violet-700 text-center">1. Liên kết & Hình dạng</p>
+                            ${leftCards}
+                        </div>
+                        <div class="space-y-2">
+                            <p class="text-[11px] font-extrabold uppercase tracking-wider text-cyan-700 text-center">2. Vùng số sóng (cm⁻¹)</p>
+                            ${rightCards}
+                        </div>
+                    </div>
+
+                    ${finishBanner}
+                </div>
+            `;
+        }
+
+        // ==================== TRẠM 3: PHÒNG THÍ NGHIỆM BỊ XÁO TRỘN – DÁN NHÃN 4 LỌ ====================
+        function renderStage3() {
+            const b = stage3Bottles[state.s3Index];
+            const container = document.getElementById('stage-container');
+
+            const optionsHTML = b.options.map((opt, idx) => `
+                <button onclick="submitStage3Answer(${idx})" class="btn-3d p-3 rounded-2xl bg-white hover:bg-rose-50 border-2 border-slate-200 hover:border-rose-500 text-center flex flex-col items-center justify-center gap-0.5 cursor-pointer">
+                    <span class="chem font-extrabold text-sm sm:text-base text-slate-900">${opt.formula}</span>
+                    <span class="text-xs font-semibold text-slate-500">${opt.name}</span>
+                </button>
+            `).join('');
+
+            container.innerHTML = `
+                <div class="space-y-3.5 animate-pop">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <span class="px-3 py-1 rounded-full bg-rose-100 text-rose-900 text-xs font-extrabold">
+                            🏷️ TRẠM 3 • TRUY TÌM NHÃN LỌ (${state.s3Index + 1}/${stage3Bottles.length})
+                        </span>
+                        <span class="text-xs font-bold text-slate-500">Sự cố mất nhãn phòng Lab</span>
+                    </div>
+
+                    <div class="bg-rose-50/80 border border-rose-200 rounded-2xl p-3 text-xs text-rose-950 leading-relaxed">
+                        🚨 <strong>Tình huống:</strong> 4 lọ hóa chất không màu bị bong nhãn! Dựa vào <strong>phổ IR đo được</strong> và gợi ý tính chất, hãy dán lại đúng nhãn công thức cho <strong>${b.bottleName}</strong>.
+                    </div>
+
+                    <!-- Thẻ lọ mất nhãn + Phổ IR -->
+                    <div class="rounded-3xl bg-slate-900 p-3.5 sm:p-4 text-white space-y-2.5 shadow-md">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="px-2.5 py-1 rounded-lg bg-rose-500 text-white font-display font-extrabold text-xs">
+                                🧪 ${b.bottleName} (?)
+                            </span>
+                            <span class="text-[11px] text-amber-300 font-semibold text-right">
+                                💡 ${b.clue}
+                            </span>
+                        </div>
+                        ${renderIRSpectrumSVG(b.profile, b.annotations)}
+                    </div>
+
+                    <p class="text-xs sm:text-sm font-extrabold text-slate-800 text-center">
+                        Chọn nhãn công thức chính xác để dán lên ${b.bottleName}:
+                    </p>
+
+                    <div class="grid grid-cols-2 gap-2.5">
+                        ${optionsHTML}
+                    </div>
+                </div>
+            `;
+        }
+
+        function submitStage3Answer(idx) {
+            const b = stage3Bottles[state.s3Index];
+            const chosen = b.options[idx];
+            const pts = recordAnswer(3, chosen.isCorrect);
+
+            showFeedbackModal(chosen.isCorrect, pts, b.explanation, () => {
+                if (state.s3Index + 1 < stage3Bottles.length) {
+                    state.s3Index++;
+                    renderStage3();
+                } else {
+                    goStage(4);
+                }
+            });
+        }
+
+        // ==================== TRẠM 4: THỬ THÁCH CHUYÊN GIA – HỒ SƠ HỢP CHẤT X ====================
+        function renderStage4() {
+            const q = stage4Challenges[state.s4Index];
+            const container = document.getElementById('stage-container');
+            const letters = ['A', 'B', 'C', 'D'];
+
+            const optsHTML = q.options.map((opt, idx) => `
+                <button onclick="submitStage4Answer(${idx})" class="btn-3d text-left p-3.5 rounded-2xl bg-white hover:bg-amber-50 border-2 border-slate-200 hover:border-amber-500 flex items-start gap-3 cursor-pointer">
+                    <span class="w-7 h-7 rounded-xl bg-amber-100 text-amber-800 font-extrabold text-xs sm:text-sm flex items-center justify-center shrink-0 mt-0.5">
+                        ${letters[idx]}
+                    </span>
+                    <span class="chem text-xs sm:text-sm font-bold text-slate-800 leading-relaxed">
+                        ${opt.text}
+                    </span>
+                </button>
+            `).join('');
+
+            container.innerHTML = `
+                <div class="space-y-4 animate-pop">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <span class="px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-extrabold">
+                            🏆 TRẠM 4 • THỬ THÁCH ${state.s4Index + 1}/${stage4Challenges.length}
+                        </span>
+                        <span class="text-xs font-bold text-amber-700">${q.badge}</span>
+                    </div>
+
+                    <div class="bg-gradient-to-br from-amber-50 to-orange-50/60 border border-amber-200 rounded-2xl p-4 text-xs sm:text-base font-bold text-slate-800 leading-relaxed">
+                        ${q.question}
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-2.5">
+                        ${optsHTML}
+                    </div>
+                </div>
+            `;
+        }
+
+        function submitStage4Answer(idx) {
+            const q = stage4Challenges[state.s4Index];
+            const chosen = q.options[idx];
+            const pts = recordAnswer(4, chosen.isCorrect);
+
+            showFeedbackModal(chosen.isCorrect, pts, q.explanation, () => {
+                if (state.s4Index + 1 < stage4Challenges.length) {
+                    state.s4Index++;
+                    renderStage4();
+                } else {
+                    finishGame();
+                }
+            });
+        }
+
+        // -------------------- 7. TỔNG KẾT, XEM LẠI ĐÁP ÁN & SAO CHÉP --------------------
+        function finishGame() {
+            playSound('win');
+
+            const totalSeconds = Math.max(1, Math.floor((Date.now() - state.startTime) / 1000));
+            const mins = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+            const secs = String(totalSeconds % 60).padStart(2, '0');
+
+            // Tính số cặp ghép đúng ngay lần đầu ở Trạm 2
+            const s2CleanCount = stage2Pairs.filter(p => state.s2FirstTryCorrect[p.id] === true).length;
+            const totalCorrect = state.correctPerStage[1] + s2CleanCount + state.correctPerStage[3] + state.correctPerStage[4];
+            const totalMax = 8 + 6 + 4 + 4; // 22 thử thách
+
+            document.getElementById('game-header').classList.add('hidden');
+            document.getElementById('screen-play').classList.add('hidden');
+            document.getElementById('screen-result').classList.remove('hidden');
+
+            const ratio = totalCorrect / totalMax;
+            let rank = "";
+            let icon = "";
+            let feedback = "";
+
+            if (ratio >= 0.9) {
+                rank = "Bậc Thầy Quang Phổ IR";
+                icon = "👑";
+                feedback = "Tuyệt đỉnh! Em đọc phổ hồng ngoại (IR) như một chuyên gia thực thụ: nhận diện chính xác từng vùng số sóng đặc trưng của –OH, –COOH, C=O, N–H và suy luận cấu tạo hợp chất hữu cơ cực kỳ sắc bén!";
+            } else if (ratio >= 0.7) {
+                rank = "Chuyên Viên Phân Tích Phổ";
+                icon = "📡";
+                feedback = "Rất tốt! Em đã nắm vững các tín hiệu phổ IR quan trọng nhất. Hãy lưu ý thêm cách phân biệt peak O–H alcohol (3600–3200 cm⁻¹) với dải rộng O–H carboxylic acid (3300–2500 cm⁻¹) để đạt điểm tối đa nhé!";
+            } else {
+                rank = "Kỹ Thuật Viên Quang Phổ Tập Sự";
+                icon = "🔬";
+                feedback = "Chúc mừng em đã hoàn thành hành trình! Em hãy bấm nút 'Xem lại đáp án' bên dưới để ghi nhớ 3 mốc số sóng vàng: O–H alcohol (3600–3200 cm⁻¹), O–H acid (3300–2500 cm⁻¹) và C=O (1750–1700 cm⁻¹).";
+            }
+
+            const classStr = state.playerClass ? ` • Lớp: ${state.playerClass}` : "";
+            document.getElementById('result-student-info').textContent = `Học sinh: ${state.playerName}${classStr}`;
+            document.getElementById('result-rank-title').textContent = rank;
+            document.getElementById('result-badge-icon').textContent = icon;
+            document.getElementById('final-score').textContent = `${state.score} XP`;
+            document.getElementById('final-accuracy').textContent = `${totalCorrect}/${totalMax}`;
+            document.getElementById('final-time').textContent = `${mins}:${secs}`;
+
+            document.getElementById('stat-s1').textContent = `${state.correctPerStage[1]}/8`;
+            document.getElementById('stat-s2').textContent = `${s2CleanCount}/6`;
+            document.getElementById('stat-s3').textContent = `${state.correctPerStage[3]}/4`;
+            document.getElementById('stat-s4').textContent = `${state.correctPerStage[4]}/4`;
+            document.getElementById('result-feedback-text').textContent = feedback;
+
+            buildReviewList();
+        }
+
+        function buildReviewList() {
+            const listEl = document.getElementById('review-list');
+            let html = "";
+
+            html += `<div class="p-3 rounded-2xl bg-cyan-50 border border-cyan-200">
+                <p class="font-extrabold text-cyan-900 mb-1.5">📡 Trạm 1: 8 Mẫu vật Phổ IR</p>
+                <ul class="space-y-1.5 text-slate-700">
+                    ${stage1Samples.map(s => `<li>• <strong>${s.name} (<span class="chem">${s.formula}</span>):</strong> ${s.tip}</li>`).join('')}
+                </ul>
+            </div>`;
+
+            html += `<div class="p-3 rounded-2xl bg-rose-50 border border-rose-200">
+                <p class="font-extrabold text-rose-900 mb-1.5">🏷️ Trạm 3: Kết quả dán nhãn 4 lọ mất nhãn</p>
+                <ul class="space-y-1.5 text-slate-700">
+                    ${stage3Bottles.map(b => `<li>• <strong>${b.bottleName} → <span class="chem">${b.correctFormula}</span>:</strong> ${b.explanation}</li>`).join('')}
+                </ul>
+            </div>`;
+
+            html += `<div class="p-3 rounded-2xl bg-amber-50 border border-amber-200">
+                <p class="font-extrabold text-amber-900 mb-1.5">🏆 Trạm 4: Giải mã Hồ sơ Hợp chất X</p>
+                <ul class="space-y-1.5 text-slate-700">
+                    ${stage4Challenges.map((q, i) => `<li>• <strong>Câu ${i + 1}:</strong> ${q.explanation}</li>`).join('')}
+                </ul>
+            </div>`;
+
+            listEl.innerHTML = html;
+        }
+
+        function toggleReviewAnswers() {
+            const sec = document.getElementById('review-section');
+            sec.classList.toggle('hidden');
+            if (!sec.classList.contains('hidden')) {
+                sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        function copyResultSummary() {
+            const classText = state.playerClass ? ` - Lớp: ${state.playerClass}` : "";
+            const scoreText = document.getElementById('final-score').textContent;
+            const accText = document.getElementById('final-accuracy').textContent;
+            const timeText = document.getElementById('final-time').textContent;
+            const rankText = document.getElementById('result-rank-title').textContent;
+
+            const summary = `📡 KẾT QUẢ IR SPECTRUM QUEST (HÓA HỌC 11)\n` +
+                            `👤 Học sinh: ${state.playerName}${classText}\n` +
+                            `🎖️ Danh hiệu: ${rankText}\n` +
+                            `⚡ Tổng điểm: ${scoreText}\n` +
+                            `✅ Độ chính xác: ${accText}\n` +
+                            `⏱️ Thời gian: ${timeText}`;
+
+            const ta = document.createElement('textarea');
+            ta.value = summary;
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+                document.execCommand('copy');
+                const btn = document.getElementById('btn-copy');
+                const old = btn.innerHTML;
+                btn.innerHTML = `<span>✅ Đã sao chép!</span>`;
+                setTimeout(() => { btn.innerHTML = old; }, 2000);
+            } catch (e) {}
+            document.body.removeChild(ta);
+        }
+
+        function resetGame() {
+            document.getElementById('review-section').classList.add('hidden');
+            document.getElementById('screen-result').classList.add('hidden');
+            document.getElementById('screen-welcome').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
